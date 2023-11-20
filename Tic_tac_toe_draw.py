@@ -1,106 +1,118 @@
-gameboard = [(['.']*3) for i in range(3)]
-
-# variables for input and turn count
-row_col = [0]
-turn = 1
-
-# checks that the input is valid
-# - that it is in the format "row,col"
-# - that the position is free
-def input_valid(values):
-	# input has only two values
-    if len(values) != 2:
-        print ("Input must be two numbers in format row,col e.g.  1,2 ")
-        return 0
-    # input is a number between 1 and 3 (inclusive)
-    try:
-        if (1 <= int(values[0]) <= 3) and (1 <= int(values[1]) <= 3):
-            # checks if the position on the board is alreay filled
-            if gameboard[int(values[0])-1][int(values[1])-1] != '.':
-                print ("Position on board already taken.")
-                return 0
-            return 1
-        else:
-            print ("Input values must be numbers between 1 and 3 (inclusive)")
-            return 0
-    except ValueError:
-        print ("Input values must be numbers between 1 and 3 (inclusive)")
-        return 0
+def draw_line(width, edge, filling):
+    print(filling.join([edge] * (width + 1)))
 
 
-# draw the board
-def draw_board(values, player):
-    # changes the value to X or O
-    gameboard[int(values[0])-1][int(values[1])-1]=player
+def display_winner(player):
+    if player == 0:
+        print("Tie")
+    else:
+        print("Player " + str(player) + " wins!")
 
-    # print the gameboard
-    for row in gameboard:
-        print (row)
 
-# calculate if game is over (no more '.' or has winner)
-def game_over():
-    searcht = '.'
+def check_row_winner(row):
+    """
+    Return the player number that wins for that row.
+    If there is no winner, return 0.
+    """
+    if row[0] == row[1] and row[1] == row[2]:
+        return row[0]
+    return 0
 
-    # check win by row
-    for i in range(3):
-        if len(set(gameboard[i])) == 1:
-            if gameboard[i][1] == '.':
-                continue
-            elif gameboard[i][1] == 'X':
-                print ("Game over - Player 1 wins")
-            #elif gameboard[i][1] == 'O':
-            else:
-                print ("Game over - Player 2 wins")
-            return 1
 
-    # check win by column
-    for i in range(3):
-        if gameboard[0][i] == gameboard[1][i] == gameboard[2][i]:
-            if gameboard[0][i] == '.':
-                continue
-            elif gameboard[0][i] == 'X':
-                print ("Game over - Player 1 wins")
-            else:
-                print ("Game over - Player 2 wins")
-            return 1
+def get_col(game, col_number):
+    return [game[x][col_number] for x in range(3)]
 
-    # check win by diagonal
-    if (gameboard[0][0] == gameboard[1][1] == gameboard[2][2]) or (gameboard[0][2] == gameboard[1][1] == gameboard[2][0]):
-        if gameboard[1][1] == 'X':
-            print ("Game over - Player 1 wins")
-        elif gameboard[1][1] == 'O':
-            print ("Game over - Player 2 wins")
-        else:
-            return 0
+
+def get_row(game, row_number):
+    return game[row_number]
+
+
+def check_winner(game):
+    game_slices = []
+    for index in range(3):
+        game_slices.append(get_row(game, index))
+        game_slices.append(get_col(game, index))
+
+    # check diagonals
+    down_diagonal = [game[x][x] for x in range(3)]
+    up_diagonal = [game[0][2], game[1][1], game[2][0]]
+    game_slices.append(down_diagonal)
+    game_slices.append(up_diagonal)
+
+    for game_slice in game_slices:
+        winner = check_row_winner(game_slice)
+        if winner != 0:
+            return winner
+
+    return winner
+
+
+def start_game():
+    return [[0, 0, 0] for x in range(3)]
+
+
+def display_game(game):
+    d = {2: "O", 1: "X", 0: "_"}
+    draw_line(3, " ", "_")
+    for row_num in range(3):
+        new_row = []
+        for col_num in range(3):
+            new_row.append(d[game[row_num][col_num]])
+        print("|" + "|".join(new_row) + "|")
+
+
+def add_piece(game, player, row, column):
+    """
+    game: game state
+    player: player number
+    row: 0-index row
+    column: 0-index column
+    """
+    game[row][column] = player
+    return game
+
+
+def check_space_empty(game, row, column):
+    return game[row][column] == 0
+
+
+def convert_input_to_coordinate(user_input):
+    return user_input - 1
+
+
+def switch_player(player):
+    if player == 1:
+        return 2
+    else:
         return 1
 
-    # check board is full
-    for sublist in gameboard:
-        if searcht in sublist:
-            return 0
 
-    print ("Game over - the board is filled")
-    return 1
-
-
+def moves_exist(game):
+    for row_num in range(3):
+        for col_num in range(3):
+            if game[row_num][col_num] == 0:
+                return True
+    return False
 
 
-# main function that runs the game while board is not full
-while not game_over():
-    piece = '.'
+if __name__ == "__main__":
+    game = start_game()
+    display_game(game)
+    player = 1
+    winner = 0  # the winner is not yet defined
 
-    # Player input - checks for input correctness
-    while not input_valid(row_col):
-        player = turn % 2
-        if player == 0:
-            player = 2
-            piece = 'O'
-        else:
-            piece = 'X'
-        p1 = input('Player ' + str(player) +' input: ')
-        row_col = p1.split(",")
-
-    draw_board(row_col, piece)
-
-    row_col = [0]
-    turn += 1
+    # go on forever
+    while winner == 0 and moves_exist(game):
+        print("Currently player: " + str(player))
+        available = False
+        while not available:
+            row = convert_input_to_coordinate(int(input("Which row? (start with 1) ")))
+            column = convert_input_to_coordinate(
+                int(input("Which column? (start with 1) "))
+            )
+            available = check_space_empty(game, row, column)
+        game = add_piece(game, player, row, column)
+        display_game(game)
+        player = switch_player(player)
+        winner = check_winner(game)
+    display_winner(winner)
